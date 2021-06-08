@@ -1,0 +1,16 @@
+{
+	"name": "Read-data-from-adls",
+	"properties": {
+		"content": {
+			"query": "SELECT\n  TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://adlsstoragemorantus.dfs.core.windows.net/hivedata/hive/warehouse/nyctaxidb/test_parquet/delta_0000001_0000001_0000',\n        FORMAT='PARQUET'\n) AS testp;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"name": "master",
+				"type": "SqlOnDemand"
+			}
+		},
+		"type": "SqlQuery"
+	}
+}
