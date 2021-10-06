@@ -16,7 +16,8 @@
 				"userProperties": [],
 				"typeProperties": {
 					"source": {
-						"type": "HBaseSource"
+						"type": "HBaseSource",
+						"query": "'select * from default.Contacts'"
 					},
 					"sink": {
 						"type": "DelimitedTextSink",
