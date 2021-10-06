@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"value": "morantussynapse"
+		},
+		"HBase1_password": {
+			"value": ""
+		},
+		"morantussynapse-WorkspaceDefaultSqlServer_connectionString": {
+			"value": ""
+		},
+		"HBase1_properties_typeProperties_host": {
+			"value": "hbasesynapse.azurehdinsight.net"
+		},
+		"HBase1_properties_typeProperties_username": {
+			"value": "admin"
+		},
+		"morantussynapse-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"value": "https://adlsstoragemorantus.dfs.core.windows.net"
+		}
+	}
+}

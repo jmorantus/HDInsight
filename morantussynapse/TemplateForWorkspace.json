@@ -1,0 +1,775 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "morantussynapse"
+		},
+		"HBase1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'HBase1'"
+		},
+		"morantussynapse-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'morantussynapse-WorkspaceDefaultSqlServer'"
+		},
+		"HBase1_properties_typeProperties_host": {
+			"type": "string",
+			"defaultValue": "hbasesynapse.azurehdinsight.net"
+		},
+		"HBase1_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "admin"
+		},
+		"morantussynapse-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adlsstoragemorantus.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data from HBase",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "HBaseSource"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "HBaseObject1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DelimitedText1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/HBaseObject1')]",
+				"[concat(variables('workspaceId'), '/datasets/DelimitedText1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/HBaseObject1')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "HBase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "HBaseObject",
+				"schema": [],
+				"typeProperties": {
+					"tableName": "\"Contacts\""
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/HBase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/HBase1')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "HBase",
+				"typeProperties": {
+					"host": "[parameters('HBase1_properties_typeProperties_host')]",
+					"port": "443",
+					"httpPath": "/hbaserest0",
+					"authenticationType": "Basic",
+					"username": "[parameters('HBase1_properties_typeProperties_username')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('HBase1_password')]"
+					},
+					"enableSsl": true,
+					"trustedCertPath": "",
+					"allowHostNameCNMismatch": true,
+					"allowSelfSignedServerCert": true
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/morantussynapse-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('morantussynapse-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/morantussynapse-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('morantussynapse-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Load-data-to-SQLPool-from-Storage')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.objects WHERE NAME = 'test_parquet' AND TYPE = 'U')\n\nDROP TABLE test_parquet\nGO\n\nCREATE TABLE test_parquet\n\t(\n\t medallion nvarchar(100),\n\t hack_license nvarchar(100),\n\t vendor_id nvarchar(100),\n\t pickup_datetime nvarchar(100),\n\t payment_type nvarchar(100),\n\t fare_amount float,\n\t surcharge float,\n\t mta_tax float,\n\t tip_amount float,\n\t tolls_amount float,\n\t total_amount float,\n\t month int\n\t)\nWITH\n\t(\n\tDISTRIBUTION = ROUND_ROBIN,\n\t CLUSTERED COLUMNSTORE INDEX\n\t -- HEAP\n\t)\nGO\n\n--Uncomment the 4 lines below to create a stored procedure for data pipeline orchestration​                 \n--CREATE PROC bulk_load_test_parquet\n--AS\n--BEGIN\nCOPY INTO test_parquet\n(medallion 1, hack_license 2, vendor_id 3, pickup_datetime 4, payment_type 5, fare_amount 6, surcharge 7, mta_tax 8, tip_amount 9, tolls_amount 10, total_amount 11, month 12)\nFROM 'https://adlsstoragemorantus.dfs.core.windows.net/hivedata/hive/warehouse/nyctaxidb/test_parquet/delta_0000001_0000001_0000'\nWITH\n(\n\tFILE_TYPE = 'PARQUET'\n\t,MAXERRORS = 0\n\t,IDENTITY_INSERT = 'OFF'\n)\n--END\nGO\n\nSELECT TOP 100 * FROM test_parquet\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"name": "SQLPool01",
+						"type": "SqlPool"
+					}
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Read-data-from-adls')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "SELECT\n  TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://adlsstoragemorantus.dfs.core.windows.net/hivedata/hive/warehouse/nyctaxidb/test_parquet/delta_0000001_0000001_0000',\n        FORMAT='PARQUET'\n) AS testp;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"name": "master",
+						"type": "SqlOnDemand"
+					}
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/06 Delta Lake Demo')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 0,
+				"nbformat_minor": 0,
+				"bigDataPool": {
+					"referenceName": "SparkPool01",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 3,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "3",
+						"spark.dynamicAllocation.maxExecutors": "3"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"synapse_widget": {
+						"version": "0.1"
+					},
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/7ae592c9-c276-473d-b85b-e55d5c26c304/resourceGroups/Synapse-RG/providers/Microsoft.Synapse/workspaces/morantussynapse/bigDataPools/SparkPool01",
+						"name": "SparkPool01",
+						"type": "Spark",
+						"endpoint": "https://morantussynapse.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "2.4",
+						"nodeCount": 10,
+						"cores": 4,
+						"memory": 28,
+						"extraHeader": null
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"source": [
+							"# Using Linux foundation Delta Lake in Synapse Spark\n",
+							"In this notebook, how to read the delta table, how to write to delta table and timetravel is demonstrated"
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Set the strorage path info\n",
+							"account_name = 'adlsstoragemorantus' # fill in your primary storage account name\n",
+							"container_name = 'deltademo' # fill in your container name\n",
+							"relative_csv_path = 'RawData/HRData' # fill in your relative CSV folder path\n",
+							"relative_delta_path='silverdata/hrdata' # fill in your relative delta lake folder path\n",
+							"\n",
+							"adls_path = 'abfss://%s@%s.dfs.core.windows.net/' % (container_name, account_name)\n",
+							"print('Primary storage account path: ' + adls_path)\n",
+							"\n",
+							"#csv input file path\n",
+							"csvfilepath = adls_path + relative_csv_path + '/00 HRData.csv'\n",
+							"print ('CSV file path: '+ csvfilepath)\n",
+							"\n",
+							"# Delta Lake relative path\n",
+							"deltatablepath = adls_path + relative_delta_path + '/'\n",
+							"print('Delta Lake path: ' + deltatablepath)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Read data in csv format\n",
+							"\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"csvhrdatadf = spark.read.option(\"header\",True).format(\"csv\").load(csvfilepath)\n",
+							"csvhrdatadf.show(10)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Write data in delta format\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"csvhrdatadf.write.mode(\"overwrite\").format(\"delta\").partitionBy(\"Department\").save(deltatablepath)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_hr = spark.read.format(\"delta\").load(deltatablepath)\n",
+							"df_hr.show(10)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Add New Column YearsOfService\n",
+							"\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"import pyspark.sql.functions as f\n",
+							"\n",
+							"df_hr_service = df_hr.withColumn('YearsOfService',2020-f.year(f.to_timestamp('DateofHire', 'MM/dd/yyyy')))\n",
+							"df_hr_service.show(5)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 6
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Overwrite the entire delta table\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_hr_service.write.mode(\"overwrite\").format(\"delta\").partitionBy(\"Department\").option(\"mergeSchema\", True).save(deltatablepath)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 7
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Validate delta table is updated with new column\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"hrdataframe = spark.read.format(\"delta\").load(deltatablepath)\n",
+							"hrdataframe.show(10)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Check version with timetravel\n",
+							"\n",
+							"we can see here yearsOfService column is not present in original delta table"
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"hrdataoriginal = (spark\n",
+							"                    .read\n",
+							"                    .format(\"delta\")\n",
+							"                    .option(\"versionAsOf\",0)\n",
+							"                    .load(deltatablepath)\n",
+							"                    )\n",
+							"hrdataoriginal.show(10)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 9
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Update records that match the given condition \n",
+							"Lets update here PayRate for employees whose payroll is less than 20 to make it lowest payrate value above 20.\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"from pyspark.sql.functions import *\n",
+							"from delta.tables import *\n",
+							"\n",
+							"deltaTable = DeltaTable.forPath(spark,deltatablepath)\n",
+							"\n",
+							"minPayRateAbove20 = hrdataframe.filter(\"PayRate>20\").agg({\"PayRate\":\"min\"}).collect()[0][\"min(PayRate)\"]\n",
+							"\n",
+							"#Number of records that will be updated\n",
+							"deltaTable.toDF().filter(col(\"PayRate\")<minPayRateAbove20).count()\n",
+							""
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 10
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Update PayRate to 20.5 for employees whose PayRate is below 20 \n",
+							"deltaTable.update(\n",
+							"    condition = (col(\"PayRate\")<minPayRateAbove20),\n",
+							"    set = {\"PayRate\":minPayRateAbove20}\n",
+							")\n",
+							"deltaTable.toDF().filter(col(\"PayRate\")<minPayRateAbove20).show()"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 11
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Validate changes by filtering records on condition\n",
+							"Validate no employees have PayRate less than or equal to 20\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"deltaTableAfterUpdate = DeltaTable.forPath(spark,deltatablepath)\n",
+							"deltaTableAfterUpdate.toDF().filter(col(\"PayRate\")<minPayRateAbove20).count()"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"## Audit data changes\n",
+							"or Check Version history\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"#get version history\n",
+							"deltaTable.history().show()"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 13
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"deltaTable.history(1).show()"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 15
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Undo changes for DeltaTable by restoring previous version\n",
+							"Lets set the PayRate as it was in previous version "
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"#Get verison 0 details\n",
+							"hrdataversion0 = spark\\\n",
+							"                        .read\\\n",
+							"                        .format(\"delta\")\\\n",
+							"                        .option(\"versionAsOF\",0)\\\n",
+							"                        .load(deltatablepath)\n",
+							"print(\"HR Dataframe as of version 0: \")\n",
+							"hrdataversion0.show(10)\n",
+							"\n",
+							"print(\"In version 0 count of employees who have PayRate less than or equal to 20 are:%d\" % hrdataversion0.filter(col(\"PayRate\")<minPayRateAbove20).count())\n",
+							"\n",
+							"# Revert changes\n",
+							"hrdataversion0.write.format(\"delta\").mode(\"overwrite\").partitionBy(\"Department\").save(deltatablepath)\n",
+							"\n",
+							"#read data and check count of employees again\n",
+							"finalversion = spark.read.format(\"delta\").load(deltatablepath)\n",
+							"print(\"In latest version count of employees who have PayRate less than or equal to 20 are: %d\" % finalversion.filter(col(\"PayRate\")<minPayRateAbove20).count())\n",
+							"finalversion.show(10)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 16
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Create a SQL table below\r\n",
+							""
+						],
+						"attachments": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": true
+						},
+						"source": [
+							""
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Read-Gzip')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "SparkPool01",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/7ae592c9-c276-473d-b85b-e55d5c26c304/resourceGroups/Synapse-RG/providers/Microsoft.Synapse/workspaces/morantussynapse/bigDataPools/SparkPool01",
+						"name": "SparkPool01",
+						"type": "Spark",
+						"endpoint": "https://morantussynapse.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SparkPool01",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "2.4",
+						"nodeCount": 10,
+						"cores": 4,
+						"memory": 28
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"df = spark.read.option(\"header\", True).csv(\"abfss://files@adlsstoragemorantus.dfs.core.windows.net/data2/mydata.zip/*\")\r\n",
+							"df.show(6)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": true
+						},
+						"source": [
+							"df.write.parquet(\"abfss://files@adlsstoragemorantus.dfs.core.windows.net/data2/parquetfiles/\")"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": true
+						},
+						"source": [
+							"dfp = spark.read.parquet(\"abfss://files@adlsstoragemorantus.dfs.core.windows.net/data2/parquetfiles/*\")\r\n",
+							"dfp.show(6)"
+						],
+						"attachments": null,
+						"outputs": [],
+						"execution_count": 3
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQLPool01')]",
+			"type": "Microsoft.Synapse/workspaces/sqlPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"collation": "SQL_Latin1_General_CP1_CI_AS",
+				"maxSizeBytes": 263882790666240,
+				"restorePointInTime": "0001-01-01T00:00:00",
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "eastus"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DelimitedText1')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "morantussynapse-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "clouderalab"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/morantussynapse-WorkspaceDefaultStorage')]"
+			]
+		}
+	]
+}
